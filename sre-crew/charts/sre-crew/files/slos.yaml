@@ -1,0 +1,13 @@
+service_name: "payment-service"
+slos:
+  - name: "API Availability"
+    description: "99.9% of requests must succeed (non-5xx)"
+    # Formula: (Total - 5xx) / Total
+    promql: "sum(rate(http_requests_total{status!~'5..'}[5m])) / sum(rate(http_requests_total[5m]))"
+    target_percentage: 99.9
+
+  - name: "P99 Latency"
+    description: "99% of requests must be served in under 200ms"
+    # Formula: Histogram P99 calculation
+    promql: "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m]) by (le)))"
+    threshold_value: 0.2

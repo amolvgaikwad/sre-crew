@@ -1,0 +1,23 @@
+replicas: 1
+
+image:
+  repository: sre-crew
+  tag: latest
+  pullPolicy: Never # 'Never' for local Docker images, 'Always' for registry
+
+config:
+  monitorInterval: 60
+  sloInterval: 300
+  prometheusUrl: "http://prometheus-server.monitoring.svc.cluster.local:9090"
+
+secrets:
+  openaiApiKey: ""
+  slackWebhookUrl: ""
+  
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "1Gi"
+    cpu: "1000m"

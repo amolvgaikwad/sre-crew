@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sre-crew
+  labels:
+    app: sre-crew
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: sre-crew
+  template:
+    metadata:
+      labels:
+        app: sre-crew
+    spec:
+      serviceAccountName: sre-crew-sa
+      containers:
+      - name: orchestrator
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: PROMETHEUS_URL
+          value: {{ .Values.config.prometheusUrl | quote }}
+        - name: MONITOR_INTERVAL
+          value: {{ .Values.config.monitorInterval | quote }}
+        - name: SLO_INTERVAL
+          value: {{ .Values.config.sloInterval | quote }}
+        envFrom:
+        - secretRef:
+            name: sre-crew-secrets
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+          readOnly: true
+      volumes:
+      - name: config-volume
+        configMap:
+          name: sre-crew-config

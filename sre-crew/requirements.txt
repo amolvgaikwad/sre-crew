@@ -1,0 +1,7 @@
+crewai
+langchain_openai
+prometheus-api-client
+requests
+pyyaml
+kubernetes
+pydantic

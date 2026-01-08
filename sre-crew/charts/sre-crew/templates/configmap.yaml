@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sre-crew-config
+  labels:
+    app: sre-crew
+data:
+  agents.yaml: |-
+{{ .Files.Get "files/agents.yaml" | indent 4 }}
+  tasks.yaml: |-
+{{ .Files.Get "files/tasks.yaml" | indent 4 }}
+  slos.yaml: |-
+{{ .Files.Get "files/slos.yaml" | indent 4 }}
+  llm_config.json: |-
+{{ .Files.Get "files/llm_config.json" | indent 4 }}
