@@ -1,53 +1,34 @@
 monitor_task:
   description: >
-    Perform a health check on the 'payment-service' by querying Prometheus.
+    Query Prometheus for RabbitMQ health.
+    1. Check Node Count: Is 'count(rabbitmq_up)' < 3?
+    2. Check Partitions: Is 'sum(rabbitmq_partitions)' > 0?
     
-    1. **Traffic Check:** Is the service receiving traffic? (rate > 0)
-    2. **Error Rate Check:** Calculate 5xx errors percentage over the last 5m.
-       - Threshold: > 1% is CRITICAL.
-    3. **Saturation Check:** Check CPU usage relative to limits.
-       - Threshold: > 85% is WARNING.
-    
-    **OUTPUT FORMAT RULE:**
-    - If all metrics are safe: Start response with "HEALTHY".
-    - If any metric breaches: Start response with "ANOMALY: [Reason]".
-    - If queries fail or return empty: Start response with "ANOMALY: Data Missing".
-  expected_output: "A concise status string strictly following the 'HEALTHY' or 'ANOMALY' format."
+    Output strictly:
+    - "ANOMALY: Node Count Low (Current: X)" if nodes < 3.
+    - "ANOMALY: Split Brain" if partitions > 0.
+    - "HEALTHY" if all checks pass.
+  expected_output: "Status string."
 
 investigation_task:
   description: >
-    **INCIDENT RESPONSE PROTOCOL**
-    Context: The Monitor Agent reported: "{anomaly_context}"
+    **RABBITMQ INCIDENT RESPONSE**
+    Context: {anomaly_context}
     
-    **Step 1: Triage (Analyze)**
-    - Run deeper PromQL queries to distinguish the failure mode.
-    - **Scenario A (Stuck/Zombie):** Traffic exists but CPU is near 0 OR Request latency is infinite (timeout).
-    - **Scenario B (App Crash):** High volume of 5xx errors with normal/high CPU (indicates bug or overload).
+    **Scenario A: Low Node Count**
+    - IF the anomaly is "Node Count Low":
+    - ACTION: Use 'ScaleStatefulSet' tool.
+    - PARAMETERS: target='messaging/my-cluster-rabbitmq', replicas=3.
+    - VERIFY: Output confirmation that scaling was triggered.
+
+    **Scenario B: Network Partition / Split Brain**
+    - ACTION: Do NOT restart automatically (risk of data loss).
+    - ACTION: Use 'SendAlert' tool to summon a human operator immediately.
     
-    **Step 2: Remediation (Act)**
-    - **IF Scenario A (Stuck):** Use the 'RestartDeployment' tool on 'default/payment-service'.
-      - *Verify:* After triggering, confirm the command returned success.
-    - **IF Scenario B (Crash/Bug):** Do NOT restart. This preserves logs for developers.
-      - Use the 'SendAlert' tool to notify the team with the specific error pattern.
-    - **IF Uncertain:** Default to 'SendAlert'.
-    
-    **Step 3: Report**
-    - Output the final action taken and the technical reasoning.
-  expected_output: "Incident Report: clearly stating the Root Cause Analysis (RCA) and the specific Action taken (Restart vs Alert)."
+    **Output:** Final report of action taken.
+  expected_output: "Action Report: 'Scaled Cluster' or 'Sent Alert'."
 
 slo_task:
   description: >
-    **SLO COMPLIANCE AUDIT**
-    
-    1. **Context Load:** Read specific targets from the provided SLO configuration.
-    2. **Execution:** For each SLO (Availability & Latency):
-       - Execute the associated PromQL query.
-       - Calculate the current value (e.g., 99.5%).
-       - Compare against the 'target_percentage' or 'threshold_value'.
-    3. **Burn Rate Calculation:**
-       - If the current value is below target, estimate how fast we are draining the error budget.
-    
-    4. **Reporting:**
-       - Generate a Markdown table summarizing the status of each SLO.
-       - explicitly mark each as '✅ MET' or '❌ BREACHED'.
-  expected_output: "A detailed Markdown table of SLO status including current values and breach indicators."
+    Audit RabbitMQ SLOs. Compare current node count vs target (3).
+  expected_output: "SLO Compliance Report."

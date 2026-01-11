@@ -38,7 +38,7 @@ The system uses an **Orchestrator Pattern** to minimize costs and maximize contr
 ### 1. Configuration
 All logic is controlled via YAML files in `charts/sre-crew/files/`. You can edit these on the fly:
 * `slos.yaml`: Define your availability targets (e.g., 99.9%).
-* `llm_config.json`: Change model (e.g., `gpt-3.5-turbo` vs `gpt-4`).
+* `llm_config.json`: Change model (e.g., `gpt-4o-mini`).
 * `tasks.yaml`: Update the "Runbooks" the agents follow.
 
 ### 2. Build the Image
@@ -50,13 +50,15 @@ docker build -t sre-crew:latest .
 ### 3. Deploy to Kubernetes
 ```bash
 # Export your API Key first
-export OPENAI_API_KEY="sk-proj-..."
+export OPENAI_API_KEY=""
 
 # Install via Helm
-helm install sre-crew ./sre-crew/charts/sre-crew \
+helm upgrade --install sre-crew ./sre-crew/charts/sre-crew \
+  --create-namespace \
+  --namespace sre-crew \
   --set image.pullPolicy=Never \
-  --set secrets.openaiApiKey=$(echo -n "$OPENAI_API_KEY" | base64) \
-  --set config.prometheusUrl="[http://prometheus-server.monitoring.svc.cluster.local:9090](http://prometheus-server.monitoring.svc.cluster.local:9090)" 
+  --set image.tag=latest \
+  --set config.prometheusUrl="http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090"
 ```
 
  ### 4. Testing & Verification

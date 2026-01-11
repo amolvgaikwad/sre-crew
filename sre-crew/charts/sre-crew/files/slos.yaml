@@ -1,13 +1,13 @@
-service_name: "payment-service"
+service_name: "rabbitmq-cluster-svc"
 slos:
-  - name: "API Availability"
-    description: "99.9% of requests must succeed (non-5xx)"
-    # Formula: (Total - 5xx) / Total
-    promql: "sum(rate(http_requests_total{status!~'5..'}[5m])) / sum(rate(http_requests_total[5m]))"
-    target_percentage: 99.9
+  - name: "Cluster Node Count"
+    description: "The RabbitMQ cluster must have exactly 3 running nodes."
+    # Logic: Count the number of running nodes. Target is 3.
+    promql: "count(rabbitmq_up{job='rabbitmq'})"
+    target_percentage: 3.0
+    # Note: We treat this value as an absolute target, not a percentage, in our logic.
 
-  - name: "P99 Latency"
-    description: "99% of requests must be served in under 200ms"
-    # Formula: Histogram P99 calculation
-    promql: "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m]) by (le)))"
-    threshold_value: 0.2
+  - name: "Cluster Partition Tolerance"
+    description: "The cluster must NOT have any network partitions."
+    promql: "sum(rabbitmq_partitions)"
+    threshold_value: 0.0

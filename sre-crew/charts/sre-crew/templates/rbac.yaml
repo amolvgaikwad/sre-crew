@@ -2,24 +2,34 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: sre-crew-sa
+  namespace: sre-crew
 ---
+# Change Kind from Role -> ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
-  name: sre-crew-role
+  name: sre-crew-cluster-role
 rules:
-- apiGroups: ["apps", "extensions"]
-  resources: ["deployments"]
+# Allow managing StatefulSets & Deployments in ANY namespace
+- apiGroups: ["apps"]
+  resources: ["statefulsets", "statefulsets/scale", "deployments", "deployments/scale"]
   verbs: ["get", "list", "patch", "update"]
+# Allow reading Pods/Nodes (for general monitoring)
+- apiGroups: [""]
+  resources: ["pods", "nodes", "configmaps", "services"]
+  verbs: ["get", "list"]
 ---
+# Change Kind from RoleBinding -> ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
-  name: sre-crew-binding
+  name: sre-crew-global-binding
 subjects:
 - kind: ServiceAccount
   name: sre-crew-sa
+  # IMPORTANT: We must specify where the ServiceAccount lives
+  namespace: sre-crew
 roleRef:
-  kind: Role
-  name: sre-crew-role
+  kind: ClusterRole
+  name: sre-crew-cluster-role
   apiGroup: rbac.authorization.k8s.io
